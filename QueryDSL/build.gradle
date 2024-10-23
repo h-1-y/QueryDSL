@@ -52,7 +52,7 @@ tasks.named('test') {
 }
 
 // QueryDsl 디렉토리 경로
-def querydslSrcDir = 'src/main/generated/querydsl'
+def querydslSrcDir = 'src/main/generated'
 
 clean {
 	delete file(querydslSrcDir)
