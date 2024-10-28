@@ -3,6 +3,7 @@ package study.querydsl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static study.querydsl.entity.QMember.member;
 import static study.querydsl.entity.QTeam.team;
+import static com.querydsl.jpa.JPAExpressions.*;
 
 import java.util.List;
 
@@ -15,12 +16,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.PersistenceUnit;
 import study.querydsl.entity.Member;
+import study.querydsl.entity.QMember;
 import study.querydsl.entity.Team;
 
 @SpringBootTest
@@ -363,8 +367,175 @@ public class QueryDslBasicTest {
 		
 	}
 	
+	/*
+	 * JPAExpressions
+	 * 
+	 * sub query
+	 * 나이가 제일 많은 회원 조회
+	 * 
+	 */
+	@Test
+	public void subQuery() {
+		
+		QMember memberSub = new QMember("memberSub");
+		
+		List<Member> result = queryFactory
+								.selectFrom(member)
+								.where(
+										member.age.eq(
+													 select(memberSub.age.max())
+													.from(memberSub)
+												)
+										)
+								.fetch();
+		
+		assertThat(result).extracting("age").containsExactly(40);
+		
+	}
+	
+	/*
+	 * JPAExpressions
+	 * 
+	 * sub query
+	 * 나이가 평균 이상 회원 조회
+	 * 
+	 */
+	@Test
+	public void subQueryGoe() {
+		
+		QMember memberSub = new QMember("memberSub");
+		
+		List<Member> result = queryFactory
+								.selectFrom(member)
+								.where(
+										member.age.goe(
+													 select(memberSub.age.avg())
+													.from(memberSub)
+												)
+										)
+								.fetch();
+		
+		assertThat(result).extracting("age").containsExactly(30, 40);
+		
+	}
+	
+	/*
+	 * JPAExpressions
+	 * 
+	 * sub query
+	 * 나이가 10살 이상인 회원 조회 from IN
+	 * 
+	 */
+	@Test
+	public void subQueryIn() {
+		
+		QMember memberSub = new QMember("memberSub");
+		
+		List<Member> result = queryFactory
+								.selectFrom(member)
+								.where(
+										member.age.in(
+													 select(memberSub.age)
+													.from(memberSub)
+													.where(memberSub.age.gt(10))
+												)
+										)
+								.fetch();
+		
+		assertThat(result).extracting("age").containsExactly(20, 30, 40);
+		
+	}
+	
+	/*
+	 * JPAExpressions
+	 * 
+	 * sub query
+	 * 나이가 평균 이상 회원 조회
+	 * 
+	 */
+	@Test
+	public void selectSubQuery() {
+		
+		QMember memberSub = new QMember("memberSub");
+		
+		List<Tuple> result = queryFactory
+								.select(
+										  member.username
+										,    select(memberSub.age.avg())
+											.from(memberSub)
+										)
+								.from(member)
+								.fetch();
+		
+		for ( Tuple t : result ) System.out.println("t ======== " + t);
+		
+	}
+	
+	
+	// case문
+	@Test
+	public void basicCase() {
+		
+		List<String> result = queryFactory
+								.select(
+										member.age
+										.when(10).then("열살")
+										.when(20).then("스무살")
+										.otherwise("기타")
+										)
+								.from(member)
+								.fetch();
+		
+		for ( String str : result ) System.out.println("str ==== " + str);
+		
+	}
+	
+	// case문
+	@Test
+	public void complexCase() {
+		
+		List<String> result = queryFactory
+		.select(
+					new CaseBuilder()
+					.when(member.age.between(0, 20)).then("0~20살")
+					.when(member.age.between(21, 30)).then("21~30살")
+					.otherwise("기타")
+				)
+		.from(member)
+		.fetch();
+		
+		for ( String str : result ) System.out.println("str ==== " + str);
+		
+	}
+	
+	
+	// 상수
+	@Test
+	public void constant() {
+		
+		List<Tuple> result = queryFactory
+								.select(member.username, Expressions.constant("A"))
+								.from(member)
+								.fetch();
+		
+		for ( Tuple t : result ) System.out.println("t ===== " + t);
+		
+	}
+	
+	// 문자 더하기
+	@Test
+	public void concat() {
+		
+		List<String> result = queryFactory
+								.select(member.username.concat("_").concat(member.age.stringValue()))
+								.from(member)
+								.fetch();
+		
+		for ( String str : result ) System.out.println("str ======= " + str);
+		
+	}
+	
 }
-
 
 
 
