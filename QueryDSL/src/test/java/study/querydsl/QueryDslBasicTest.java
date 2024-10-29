@@ -16,13 +16,19 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.PersistenceUnit;
+import study.querydsl.dto.MemberDto;
+import study.querydsl.dto.QMemberDto;
+import study.querydsl.dto.UserDto;
 import study.querydsl.entity.Member;
 import study.querydsl.entity.QMember;
 import study.querydsl.entity.Team;
@@ -532,6 +538,147 @@ public class QueryDslBasicTest {
 								.fetch();
 		
 		for ( String str : result ) System.out.println("str ======= " + str);
+		
+	}
+	
+	// 대상이 하나일때
+	@Test
+	public void simpleProjection() {
+		
+		List<String> result = queryFactory
+							.select(member.username)
+							.from(member)
+							.fetch();
+		
+		for ( String str : result ) System.out.println("str ===== " + str);
+		
+	}
+	
+	// 대상이 여러개일때 Tuple
+	@Test
+	public void tupleProjection() {
+		
+		List<Tuple> result = queryFactory
+							.select(member.username, member.age)
+							.from(member)
+							.fetch();
+		
+		for ( Tuple t : result ) {
+			String username = t.get(member.username);
+			int age = t.get(member.age);
+			System.out.print("t ====== " + username);
+			System.out.println(" / t ====== " + age);
+		}
+		
+	}
+	
+	// DTO for JPQL
+	@Test
+	public void findDtoByJPQL() {
+		
+		List<MemberDto> result = em.createQuery("select new study.querydsl.dto.MemberDto(m.username, m.age) from Member m", MemberDto.class)
+									.getResultList();
+		
+		for ( MemberDto dto : result )
+			System.out.println("dto ======= " + dto);
+		
+	}
+	
+	// DTO for QueryDSL 3가지 방법
+	// 1. 프로퍼티 접근
+	// 2. 필드 직접 접근
+	// 3. 생성자 사용
+	
+	// DTO for QueryDSL Setter
+	// bean
+	@Test
+	public void findDtoBySetter() {
+		
+		List<MemberDto> result = queryFactory
+								.select(
+											Projections.bean(MemberDto.class, member.username, member.age)
+										)
+								.from(member)
+								.fetch();
+		
+		for ( MemberDto dto : result )
+			System.out.println("dto ======= " + dto);
+		
+	}
+	
+	// DTO for QueryDSL field
+	// fields
+	@Test
+	public void findDtoByField() {
+		
+		List<MemberDto> result = queryFactory
+								.select(
+											Projections.fields(MemberDto.class, member.username, member.age)
+										)
+								.from(member)
+								.fetch();
+		
+		for ( MemberDto dto : result )
+			System.out.println("dto ======= " + dto);
+		
+	}
+	
+	// DTO for QueryDSL field
+	// fields
+	// 필드명이 매칭되지 않을 경우 null로 반환
+	// 별칭(as) 사용 
+	@Test
+	public void findUserDtoByField() {
+		
+		QMember memberSub = new QMember("memberSub");
+		
+		List<UserDto> result = queryFactory
+								.select(
+											Projections.fields(
+																  UserDto.class, 
+																  member.username.as("name")
+																, ExpressionUtils.as(
+																						  JPAExpressions.select(memberSub.age.max()).from(memberSub)
+																						, "age"
+																					)
+															  )
+										)
+								.from(member)
+								.fetch();
+		
+		for ( UserDto dto : result )
+			System.out.println("dto ======= " + dto);
+		
+	}
+	
+	// DTO for QueryDSL Constructor
+	// constructor
+	@Test
+	public void findDtoByConstructor() {
+		
+		List<MemberDto> result = queryFactory
+								.select(
+											Projections.constructor(MemberDto.class, member.username, member.age)
+										)
+								.from(member)
+								.fetch();
+		
+		for ( MemberDto dto : result )
+			System.out.println("dto ======= " + dto);
+		
+	}
+	
+	// @QueryProjection
+	@Test
+	public void finDtoByQueryProjection() {
+		
+		List<MemberDto> result = queryFactory
+								.select(new QMemberDto(member.username, member.age))
+								.from(member)
+								.fetch();
+		
+		for ( MemberDto dto : result )
+			System.out.println("dto ======= " + dto);
 		
 	}
 	
