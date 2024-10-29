@@ -14,10 +14,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
@@ -680,6 +683,68 @@ public class QueryDslBasicTest {
 		for ( MemberDto dto : result )
 			System.out.println("dto ======= " + dto);
 		
+	}
+	
+	// 동적 쿼리 
+	// BooleanBuilder
+	@Test
+	public void dynamicQuery_BooleanBuilder() {
+		
+		// parameter
+		String usernameParam = "member1";
+		Integer ageParam = 10;
+		
+		List<Member> result = searchMember1(usernameParam, ageParam);
+		
+		assertThat(result.size()).isEqualTo(1);
+		
+	}
+
+	private List<Member> searchMember1(String usernameParam, Integer ageParam) {
+		
+		BooleanBuilder builder = new BooleanBuilder();
+		
+		if ( usernameParam != null ) builder.and(member.username.eq(usernameParam));
+		if ( ageParam != null ) builder.and(member.age.eq(ageParam));
+		
+		return queryFactory
+				.selectFrom(member)
+				.where(builder)
+				.fetch();
+	}
+	
+	// where문 다중 파라미터 사용
+	@Test
+	public void dynamicQuery_whereParam() {
+		
+		// parameter
+		String usernameParam = "member1";
+		Integer ageParam = 10;
+		
+		List<Member> result = searchMember2(usernameParam, ageParam);
+		
+		assertThat(result.size()).isEqualTo(1);
+		
+	}
+	
+	private List<Member> searchMember2(String usernameParam, Integer ageParam) {
+		return queryFactory
+				.selectFrom(member)
+//				.where(usernameEq(usernameParam), ageEq(ageParam))
+				.where(allEq(usernameParam, ageParam))
+				.fetch();
+	}
+
+	private BooleanExpression usernameEq(String usernameParam) {
+		return usernameParam != null ? member.username.eq(usernameParam) : null;
+	}
+	
+	private BooleanExpression ageEq(Integer ageParam) {
+		return ageParam != null ? member.age.eq(ageParam) : null;
+	}
+	
+	private BooleanExpression allEq(String usernameParam, Integer ageParam) {
+		return usernameEq(usernameParam).and(ageEq(ageParam));
 	}
 	
 }
