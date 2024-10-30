@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.Commit;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +39,7 @@ import study.querydsl.entity.Team;
 
 @SpringBootTest
 @Transactional
+//@Rollback(value = false)
 public class QueryDslBasicTest {
 
 	@Autowired
@@ -60,7 +62,7 @@ public class QueryDslBasicTest {
 		Member member1 = new Member("member1", 10, teamA);
 		Member member2 = new Member("member2", 20, teamA);
 		Member member3 = new Member("member3", 30, teamB);
-		Member member4 = new Member("member4", 40, teamB);
+		Member member4 = new Member("MEMBER4", 40, teamB);
 		
 		em.persist(member1);
 		em.persist(member2);
@@ -745,6 +747,92 @@ public class QueryDslBasicTest {
 	
 	private BooleanExpression allEq(String usernameParam, Integer ageParam) {
 		return usernameEq(usernameParam).and(ageEq(ageParam));
+	}
+	
+	// 벌크 연산
+	@Test
+	public void bulkUpdate() {
+		
+		long count = queryFactory
+					.update(member)
+					.set(member.username, "비회원")
+					.where(member.age.lt(28))
+					.execute();
+		
+		// 벌크 연산 후 DB에는 변경사항이 반영되지만 
+		// 영속성 컨텍스트에는 반영이 되지 않는다. 
+		List<Member> result = queryFactory
+								.selectFrom(member)
+								.fetch();
+		
+		// Member를 조회해보면 영속성 컨텍스트에서 관리되던 데이터를 그대로 가져와
+		// DB의 변경사항과 불일치함
+		for ( Member m : result ) System.out.println("m ========= " + m);
+		
+		// 그래서 fulsh, clear 해줘야함
+		em.flush();
+		em.clear();
+		
+		// 정상적으로 다시 가져온 모습
+		result = queryFactory
+				.selectFrom(member)
+				.fetch();
+		
+		for ( Member m : result ) System.out.println("m ========= " + m);
+		
+		assertThat(count).isEqualTo(2);
+		
+	}
+	
+	@Test
+	public void bulkAdd() {
+		
+		long count = queryFactory
+					.update(member)
+					.set(member.age, member.age.add(1)) // 더하기 
+//					.set(member.age, member.age.multiply(1)) // 곱하기
+					.execute();
+		
+		assertThat(count).isEqualTo(4);
+		
+	}
+	
+	@Test
+	public void bulkDelete() {
+		
+		long count = queryFactory
+					.delete(member)
+					.where(member.age.gt(18))
+					.execute();
+		
+		assertThat(count).isEqualTo(3);
+		
+	}
+	
+	@Test
+	public void sqlFunction() {
+		
+		List<String> result = queryFactory
+		.select(Expressions.stringTemplate("function('replace', {0}, {1}, {2})", member.username, "member", "M"))
+		.from(member)
+		.fetch();
+		
+		for ( String str : result ) System.out.println("str ===== " + str);
+		
+	}
+	
+	@Test
+	public void sqlFunction2() {
+		
+		List<String> result = queryFactory
+		.select(member.username)
+		.from(member)
+//		.where(member.username.eq(Expressions.stringTemplate("function('lower', {0})", member.username)))
+		.where(member.username.eq(member.username.lower()))
+		.fetch();
+		
+		for ( String str : result ) System.out.println("str ===== " + str);
+		
 	}
 	
 }
