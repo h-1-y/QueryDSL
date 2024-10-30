@@ -30,3 +30,7 @@
 - 프로젝션과 결과 반환(@QueryProjection)
 - 동적 쿼리 - BooleanBuilder 사용
 - 동적 쿼리 - where 다중 파라미터 사용
+
+# 2024. 10. 30
+- 수정, 삭제 벌크 연산
+- SQL function 호출
