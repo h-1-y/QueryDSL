@@ -1,4 +1,4 @@
-package study.querydsl;
+package study.querydsl.controller;
 
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
