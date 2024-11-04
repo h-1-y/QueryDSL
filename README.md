@@ -40,3 +40,10 @@
 - 동적 쿼리와 성능 최적화 조회 - Builder 사용
 - 동적 쿼리와 성능 최적화 조회 - Where절 파라미터 사용
 - 조회 API 컨트롤러 개발
+
+# 2024. 11. 04
+- 스프링 데이터 JPA 레포지토리로 변경
+- 사용자 정의 레포지토리
+- QueryDSL Paging 연동
+- CountQuery 최적화
+- Controller API 테스트
