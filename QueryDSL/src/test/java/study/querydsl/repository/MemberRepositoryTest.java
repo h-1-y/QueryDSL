@@ -8,7 +8,8 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Profile;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 
 import jakarta.persistence.EntityManager;
@@ -21,50 +22,33 @@ import study.querydsl.entity.Team;
 @SpringBootTest
 @Transactional
 @ActiveProfiles("test")
-class MemberJpaRepositoryTest {
+class MemberRepositoryTest {
 
 	@Autowired
 	EntityManager em;
 	
 	@Autowired
-	MemberJpaRepository memberJpaRepository;
-
+	MemberRepository memberRepository;
+	
 	@Test
 	public void basicTest() {
 		
 		Member member = new Member("member1", 10);
-		memberJpaRepository.save(member);
+		memberRepository.save(member);
 		
-		Member findMember = memberJpaRepository.findById(member.getId()).get();
+		Member findMember = memberRepository.findById(member.getId()).get();
 		assertThat(findMember).isEqualTo(member);
 		
-		List<Member> result = memberJpaRepository.findAll();
+		List<Member> result = memberRepository.findAll();
 		assertThat(result).containsExactly(member);
 		
-		List<Member> result1 = memberJpaRepository.findByUsername("member1");
+		List<Member> result1 = memberRepository.findByUsername("member1");
 		assertThat(result1).containsExactly(member);
 		
 	}
 	
 	@Test
-	public void basicQueryDslTest() {
-		
-		Member member = new Member("member1", 10);
-		memberJpaRepository.save(member);
-		
-		Member findMember = memberJpaRepository.findById(member.getId()).get();
-		assertThat(findMember).isEqualTo(member);
-		
-		List<Member> result = memberJpaRepository.findAll_QueryDsl();
-		assertThat(result).containsExactly(member);
-		
-		List<Member> result1 = memberJpaRepository.findByUsername_QueryDsl("member1");
-		assertThat(result1).containsExactly(member);
-		
-	}
-	
-	@Test
-	public void searchTest_BooleanBuilder() {
+	public void searchTest() {
 		
 		Team teamA = new Team("teamA");
 		Team teamB = new Team("teamB");
@@ -89,14 +73,14 @@ class MemberJpaRepositoryTest {
 		condition.setTeamName("teamB");
 		condition.setUsername("member4");
 		
-		List<MemberTeamDto> result = memberJpaRepository.searchByBuilder(condition);
+		List<MemberTeamDto> result = memberRepository.search(condition);
 		
 		assertThat(result).extracting("username").containsExactly("member4");
 		
 	}
-	
+
 	@Test
-	public void searchTest_WhereParam() {
+	public void searchPageSimpleTest() {
 		
 		Team teamA = new Team("teamA");
 		Team teamB = new Team("teamB");
@@ -116,14 +100,12 @@ class MemberJpaRepositoryTest {
 		
 		MemberSearchCondition condition = new MemberSearchCondition();
 		
-		condition.setAgeGoe(35);
-		condition.setAgeLoe(40);
-		condition.setTeamName("teamB");
-		condition.setUsername("member4");
+		PageRequest pageRequest = PageRequest.of(0, 3);
 		
-		List<MemberTeamDto> result = memberJpaRepository.searchByWhereParam(condition);
+		Page<MemberTeamDto> result = memberRepository.searchPageSimple(condition, pageRequest);
 		
-		assertThat(result).extracting("username").containsExactly("member4");
+		assertThat(result.getSize()).isEqualTo(3);
+		assertThat(result.getContent()).extracting("username").containsExactly("member1", "member2", "member3");
 		
 	}
 	
