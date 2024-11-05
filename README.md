@@ -47,3 +47,9 @@
 - QueryDSL Paging 연동
 - CountQuery 최적화
 - Controller API 테스트
+
+# 2024. 11. 05
+- 인터페이스 지원 - QuerydslPredicateExecutor
+- Querydsl Web 지원
+- 레퍼지토리 지원 - QuerydslRepositorySupport
+- Querydsl 지원 클래스 직접 만들기
